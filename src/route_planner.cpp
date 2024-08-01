@@ -1,5 +1,6 @@
 #include "route_planner.h"
 #include <algorithm>
+using std::sort;
 
 RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, float end_x, float end_y): m_Model(model) {
     // Convert inputs to percentage:
@@ -8,13 +9,13 @@ RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, floa
     end_x *= 0.01;
     end_y *= 0.01;
 
-    RouteModel::Node start_closest = m_Model.FindClosestNode(start_x, start_y);
-    start_closest.FindNeighbors();
-    start_node = &start_closest;
+    //start_node = &m_Model.FindClosestNode(start_x, start_y);
 
-    RouteModel::Node end_closest = m_Model.FindClosestNode(end_x, end_y);
-    end_closest.FindNeighbors();
-    end_node = &end_closest;
+
+    start_node = &m_Model.FindClosestNode(start_x, start_y);
+    end_node = &m_Model.FindClosestNode(end_x, end_y);
+    
+    std::cout << "Inside RoutePlanner::RoutePlanner";
 }
 
 
@@ -24,6 +25,9 @@ RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, floa
 // - Node objects have a distance method to determine the distance to another node.
 
 float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
+    float h_value = node->distance(*end_node);
+    return h_value;
+
 
 }
 
@@ -36,9 +40,30 @@ float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
 // - For each node in current_node.neighbors, add the neighbor to open_list and set the node's visited attribute to true.
 
 void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
+    std::cout << "current_node is " << current_node;
+
+    current_node->FindNeighbors();
+
+
+    
+    for(RouteModel::Node *n : current_node->neighbors){
+        n->parent = current_node;
+        n->h_value = CalculateHValue(n);
+        n->g_value = n->g_value + 1;
+        n->visited = true;
+
+        std::cout << "No";
+        std::cout << n->x;
+        std::cout << "\n";
+        std::cout << n->y;
+        open_list.push_back(n);
+    }
+
+
+
+    //RouteModel::Node::FindNeighbors
 
 }
-
 
 // TODO 5: Complete the NextNode method to sort the open list and return the next node.
 // Tips:
@@ -48,10 +73,38 @@ void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
 // - Return the pointer.
 
 RouteModel::Node *RoutePlanner::NextNode() {
+    //sort(open_list.begin(), openlist.end(), Compare);
+
+    //std::vector<RouteModel::Node*> open_list;
+    std::cout << "Before sort" << '\n';
+    for(RouteModel::Node *n : open_list){
+        std::cout << "h value == " << n->h_value << '\n';
+        std::cout << "g value == " << n->g_value;
+    }
+    
+
+    sort(open_list.begin(), open_list.end(), [](RouteModel::Node* a,RouteModel::Node* b) {
+        float a_node_score = a->g_value + a->h_value;
+        float b_node_score = b->g_value + b->h_value;
+        std::cout << "Hello";
+
+        return a_node_score < b_node_score;   
+    });
+
+    std::cout << "After sort" << '\n';
+    for(RouteModel::Node *n : open_list){
+        std::cout << "h value == " << n->h_value;
+    }
+
 
 }
 
+bool Compare(RouteModel::Node *a_node, RouteModel::Node *b_node) {
+    float a_node_score = a_node->g_value + a_node->h_value;
+    float b_node_score = b_node->g_value + b_node->h_value;
 
+  return a_node_score > b_node_score; 
+}
 // TODO 6: Complete the ConstructFinalPath method to return the final path found from your A* search.
 // Tips:
 // - This method should take the current (final) node as an argument and iteratively follow the 
@@ -82,6 +135,20 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node 
 
 void RoutePlanner::AStarSearch() {
     RouteModel::Node *current_node = nullptr;
+    current_node = start_node;
+    std::cout << "start_node: " << start_node;
+    AddNeighbors(current_node);
+    NextNode();
+
+    //*current_node = *start_node;
+    //start_node->FindNeighbors();
+
+    //start_node->FindNeighbors();
+    //open_list.push_back(current_node->FindNeighbors());
+
+    //start_node->h_value;
+
+    //CalculateHValue
 
     // TODO: Implement your solution here.
 
