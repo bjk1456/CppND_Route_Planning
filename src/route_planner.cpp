@@ -1,6 +1,6 @@
 #include "route_planner.h"
 #include <algorithm>
-using std::sort;
+using std::sort; 
 
 RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, float end_x, float end_y): m_Model(model) {
     // Convert inputs to percentage:
@@ -15,6 +15,7 @@ RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, floa
     start_node = &m_Model.FindClosestNode(start_x, start_y);
     end_node = &m_Model.FindClosestNode(end_x, end_y);
     
+    std::cout << "start_node parents is " << start_node->parent << "'\n";
     std::cout << "Inside RoutePlanner::RoutePlanner";
 }
 
@@ -40,6 +41,7 @@ float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
 // - For each node in current_node.neighbors, add the neighbor to open_list and set the node's visited attribute to true.
 
 void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
+    std::cout << "Inside AddNeighbors()" << "\n";
     std::cout << "current_node is " << current_node;
 
     current_node->FindNeighbors();
@@ -47,7 +49,9 @@ void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
 
     
     for(RouteModel::Node *n : current_node->neighbors){
+        if((current_node->x != start_node->x) && (current_node->y != start_node->y)){
         n->parent = current_node;
+        }
         n->h_value = CalculateHValue(n);
         n->g_value = n->g_value + 1;
         n->visited = true;
@@ -78,8 +82,9 @@ RouteModel::Node *RoutePlanner::NextNode() {
     //std::vector<RouteModel::Node*> open_list;
     std::cout << "Before sort" << '\n';
     for(RouteModel::Node *n : open_list){
+        std::cout << "Inside open_list() iterator" << '\n';
         std::cout << "h value == " << n->h_value << '\n';
-        std::cout << "g value == " << n->g_value;
+        std::cout << "g value == " << n->g_value << '\n';
     }
     
 
@@ -88,13 +93,16 @@ RouteModel::Node *RoutePlanner::NextNode() {
         float b_node_score = b->g_value + b->h_value;
         std::cout << "Hello";
 
-        return a_node_score < b_node_score;   
+        return a_node_score > b_node_score;   
     });
 
     std::cout << "After sort" << '\n';
     for(RouteModel::Node *n : open_list){
         std::cout << "h value == " << n->h_value;
     }
+    RouteModel::Node *first_node = open_list.back();
+    open_list.pop_back();
+    return first_node;
 
 
 }
@@ -103,7 +111,7 @@ bool Compare(RouteModel::Node *a_node, RouteModel::Node *b_node) {
     float a_node_score = a_node->g_value + a_node->h_value;
     float b_node_score = b_node->g_value + b_node->h_value;
 
-  return a_node_score > b_node_score; 
+  return a_node_score < b_node_score; 
 }
 // TODO 6: Complete the ConstructFinalPath method to return the final path found from your A* search.
 // Tips:
@@ -117,6 +125,18 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node 
     // Create path_found vector
     distance = 0.0f;
     std::vector<RouteModel::Node> path_found;
+    path_found.push_back(*current_node);
+    while(current_node->parent){
+        std::cout << "While parent exist " << '\n';
+        std::cout << "parent->x is " << current_node->parent->x << '\n';
+        std::cout << "parent->y is " << current_node->parent->y << '\n';
+        std::cout << "current_node->parent is " << current_node->parent << '\n';
+        distance += current_node->distance(*current_node->parent);
+        current_node = current_node->parent;
+        path_found.push_back(*current_node);
+
+
+    }
 
     // TODO: Implement your solution here.
 
@@ -135,10 +155,41 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node 
 
 void RoutePlanner::AStarSearch() {
     RouteModel::Node *current_node = nullptr;
+    std::cout << "The start_node is \n";
+    std::cout << "start_node->x is : " << start_node->x << "\n";
+    std::cout << "start_node->y is : " << start_node->y << "\n";
+    std::cout << "current_node: " << current_node << "\n";
+    std::cout << "end_node->x is : " << end_node->x << "\n";
+    std::cout << "end_node->y is : " << end_node->y << "\n";
+
     current_node = start_node;
-    std::cout << "start_node: " << start_node;
+    std::cout << "start_node: " << start_node << "\n";
     AddNeighbors(current_node);
-    NextNode();
+    current_node = NextNode();
+    std::cout << "current_node->x is : " << current_node->x << "\n";
+    std::cout << "current_node->y is : " << current_node->y << "\n";
+    std::cout << "About to loop"  << "\n";
+    AddNeighbors(current_node);
+    std::cout << "current_node->x is : " << current_node->x << "\n";
+    std::cout << "current_node->y is : " << current_node->y << "\n";
+    std::cout << "About to loop";
+    current_node = NextNode();
+    std::cout << "current_node->x is : " << current_node->x << "\n";
+    std::cout << "current_node->y is : " << current_node->y << "\n";
+
+    while((current_node->x != end_node->x) || (current_node->y != end_node->y)){
+        AddNeighbors(current_node);
+        current_node = NextNode();
+        std::cout << "current_node->x is : " << current_node->x << "\n";
+        std::cout << "current_node->y is : " << current_node->y << "\n";
+
+
+    }
+    m_Model.path = ConstructFinalPath(current_node);
+
+
+
+
 
     //*current_node = *start_node;
     //start_node->FindNeighbors();
