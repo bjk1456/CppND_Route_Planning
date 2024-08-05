@@ -34,13 +34,10 @@ float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
 
 void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
     current_node->FindNeighbors();
-
-
-    
     for(RouteModel::Node *n : current_node->neighbors){
         n->parent = current_node;
         n->h_value = CalculateHValue(n);
-        n->g_value = n->g_value + current_node->distance(*n);
+        n->g_value = current_node->g_value + current_node->distance(*n);
         n->visited = true;
 
         open_list.push_back(n);
